@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Pagamento - Separação de Lucro</title>
+    
+    <!-- BIBLIOTECAS DE JAVASCRIPT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(90deg, #004a99, #0056b3);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 74, 153, 0.2);
+        }
+        .header h1 { margin: 0; font-size: 28px; }
+        .header p { margin: 5px 0 0; font-size: 16px; opacity: 0.9; }
+        
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        
+        /* Seções Padrão */
+        .upload-section, .config-section, .filter-section, .stats-cards, .table-card, .quinzena-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        /* --- NOVA SEÇÃO ADMINISTRATIVA --- */
+        .admin-section {
+            background-color: #fffbf0; /* Fundo levemente amarelado para diferenciar */
+            border: 2px solid #ffeeba;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .admin-section h2 {
+            color: #856404; /* Cor de destaque para admin */
+            border-bottom-color: #ffeeba;
+        }
+        .admin-warning {
+            font-size: 14px;
+            color: #856404;
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        /* --- FIM SEÇÃO ADMIN --- */
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #004a99;
+            font-size: 20px;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 10px;
+        }
+        
+        input[type="file"] {
+            font-size: 16px; border: 2px dashed #ccc; border-radius: 6px;
+            padding: 10px; width: 100%; box-sizing: border-box; cursor: pointer;
+        }
+        input[type="file"]:hover { border-color: #004a99; }
+        
+        .load-button {
+            background-color: #0056b3; color: white; padding: 12px 20px;
+            border: none; border-radius: 6px; font-size: 16px; font-weight: 600;
+            cursor: pointer; margin-top: 15px; width: 100%;
+            transition: background-color 0.2s;
+        }
+        .load-button:hover { background-color: #004a99; }
+        
+        .config-controls, .filter-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px;
+        }
+        
+        .filter-group label, .config-group label {
+            display: block; font-weight: 600; margin-bottom: 8px; color: #555;
+        }
+        .config-group label i { color: #ffc107; }
+        .config-group label i.fa-map-pin { color: #28a745; }
+
+        .simple-select { display: none; }
+
+        /* Cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+            gap: 20px;
+        }
+        .stat-card {
+            background-color: #f9f9f9; border: 1px solid #e0e0e0;
+            padding: 20px; border-radius: 8px;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px; font-size: 16px; color: #555;
+            text-transform: uppercase;
+        }
+        .stat-card .value { font-size: 32px; font-weight: 700; color: #004a99; }
+        
+        .stat-card.revenue { border-left: 5px solid #6f42c1; }
+        .stat-card.revenue .value { color: #6f42c1; }
+        
+        .stat-card.payment { border-left: 5px solid #0056b3; }
+        
+        .stat-card.profit { border-left: 5px solid #17a2b8; background-color: #fff; }
+        .stat-card.profit .value { color: #17a2b8; }
+        
+        .stat-card.deliveries { border-left: 5px solid #28a745; }
+        .stat-card.deliveries .value { color: #28a745; }
+        
+        /* Quinzenas */
+        .quinzena-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .quinzena-card {
+            padding: 20px; border-radius: 8px;
+            background-color: #f9f9f9; border: 1px solid #e0e0e0;
+        }
+        .quinzena-card h3 {
+            margin: 0 0 15px; font-size: 18px; color: #333;
+            border-bottom: 2px solid #eee; padding-bottom: 10px;
+        }
+        .quinzena-card .value { font-size: 28px; font-weight: 700; color: #0056b3; }
+        .quinzena-card .count { font-size: 16px; color: #555; margin-top: 5px; }
+        .quinzena-card.q1 { border-left: 5px solid #0056b3; }
+        .quinzena-card.q2 { border-left: 5px solid #17a2b8; }
+        
+        /* Tabelas */
+        .table-container { max-height: 500px; overflow-y: auto; }
+        
+        /* Classe especial para remover rolagem nas tabelas administrativas */
+        .admin-table-container {
+            max-height: none !important;
+            overflow-y: visible !important;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            border: 1px solid #ddd; padding: 12px 15px;
+            text-align: left; font-size: 14px;
+        }
+        th {
+            background-color: #f4f7f6; font-weight: 600; color: #333;
+            position: sticky; top: 0; cursor: pointer;
+        }
+        th:hover { background-color: #e9ecef; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tfoot { background-color: #e9ecef; font-weight: bold; }
+        
+        /* Admin Table Colors */
+        #profitTable th, #cityProfitTable th { background-color: #fff3cd; color: #856404; }
+        #profitTable .lucro-val, #cityProfitTable .lucro-val { font-weight: bold; color: #28a745; }
+        
+        th[data-sort].sort-asc::after { content: ' ▲'; font-size: 0.8em; }
+        th[data-sort].sort-desc::after { content: ' ▼'; font-size: 0.8em; }
+        
+        .placeholder-message td { text-align: center; font-style: italic; color: #888; padding: 20px; }
+
+        .loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3; border-top: 8px solid #004a99;
+            border-radius: 50%; width: 60px; height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-dollar-sign"></i> Dashboard de Pagamento - Motoristas</h1>
+            <p>Cálculo de pagamento (Moto R$ 2,20 / Interior R$ 2,00 / Carro R$ 3,00)</p>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section">
+                <h2><i class="fas fa-file-excel"></i> Carregar Dados</h2>
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+                <button id="loadButton" class="load-button"><i class="fas fa-upload"></i> Carregar Dados</button>
+            </section>
+            
+            <section class="config-section">
+                <h2><i class="fas fa-cog"></i> Configuração de Veículos</h2>
+                <div class="config-controls">
+                    <div class="config-group">
+                        <label for="motoDriverConfig"><i class="fas fa-motorcycle"></i> Selecione as MOTOS (R$ 2,20)</label>
+                        <select id="motoDriverConfig" multiple></select>
+                    </div>
+                    <div class="config-group">
+                        <label for="interiorDriverConfig"><i class="fas fa-map-pin"></i> Selecione INTERIOR (R$ 2,00)</label>
+                        <select id="interiorDriverConfig" multiple></select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="filter-section">
+                <h2><i class="fas fa-filter"></i> Filtros</h2>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="driverFilter">Motorista</label>
+                        <select id="driverFilter" multiple></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="cityFilter">Cidade</label>
+                        <select id="cityFilter" multiple></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="paymentTypeFilter">Tipo de Pagamento</label>
+                        <select id="paymentTypeFilter" multiple></select>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="quinzena-section">
+                <h2><i class="fas fa-calendar-check"></i> Fechamento Quinzenal (Valores a Pagar)</h2>
+                <div class="quinzena-cards">
+                    <div class="quinzena-card q1">
+                        <h3><i class="fas fa-calendar-day"></i> 1ª Quinzena (Dias 1-15)</h3>
+                        <div class="value" id="q1_payment">R$ 0,00</div>
+                        <div class="count" id="q1_count">0 entregas</div>
+                    </div>
+                    <div class="quinzena-card q2">
+                        <h3><i class="fas fa-calendar-week"></i> 2ª Quinzena (Dia 16+)</h3>
+                        <div class="value" id="q2_payment">R$ 0,00</div>
+                        <div class="count" id="q2_count">0 entregas</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CARD DE LUCRO REMOVIDO DAQUI -->
+            <section class="stats-cards">
+                <div class="stat-card revenue">
+                    <h3><i class="fas fa-hand-holding-usd"></i> Faturamento Total</h3>
+                    <div class="value" id="totalRevenue">R$ 0,00</div>
+                </div>
+                <div class="stat-card payment">
+                    <h3><i class="fas fa-dollar-sign"></i> Custo Total (Pagto)</h3>
+                    <div class="value" id="totalPayment">R$ 0,00</div>
+                </div>
+                <div class="stat-card deliveries">
+                    <h3><i class="fas fa-box-open"></i> Entregas</h3>
+                    <div class="value" id="totalDeliveries">0</div>
+                </div>
+            </section>
+
+            <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                <div class="table-card">
+                    <h2><i class="fas fa-users"></i> Pagamento por Motorista (Para envio)</h2>
+                    <div class="table-container">
+                        <table id="paymentTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="motorista">Motorista</th>
+                                    <th data-sort="count">Qtd</th>
+                                    <th data-sort="valorUnitario">Valor Unit.</th>
+                                    <th data-sort="totalPayment">A Pagar</th>
+                                    <!-- SEM COLUNA DE LUCRO AQUI -->
+                                </tr>
+                            </thead>
+                            <tbody id="paymentTableBody">
+                                <tr class="placeholder-message"><td colspan="4">Carregue o arquivo...</td></tr>
+                            </tbody>
+                            <tfoot id="paymentTableFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="table-card">
+                    <h2><i class="fas fa-calendar-alt"></i> Entregas por Dia</h2>
+                    <div class="table-container">
+                        <table id="dailyBreakdownTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="date">Data</th>
+                                    <th data-sort="count">Qtd</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailyBreakdownTableBody">
+                                <tr class="placeholder-message"><td colspan="2">Selecione 1 motorista para ver.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="table-card">
+                <h2><i class="fas fa-list-check"></i> Detalhes das Entregas</h2>
+                <div class="table-container">
+                    <table id="detailsTable">
+                        <thead>
+                            <tr>
+                                <th data-sort="pedido">Pedido JMS</th>
+                                <th data-sort="motorista">Motorista</th>
+                                <th data-sort="destinatario">Destinatário</th>
+                                <th data-sort="cidade">Cidade</th>
+                                <th data-sort="status">Status</th>
+                                <th data-sort="valor">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsTableBody">
+                            <tr class="placeholder-message"><td colspan="6">Carregue o arquivo...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================== -->
+            <!-- NOVA SEÇÃO ADMINISTRATIVA (LUCROS)             -->
+            <!-- ============================================== -->
+            <section class="admin-section">
+                <h2><i class="fas fa-lock"></i> Área Administrativa - Controle de Lucro</h2>
+                <div class="admin-warning">
+                    <i class="fas fa-eye-slash"></i> Esta seção contém informações confidenciais. Não envie prints desta parte para os motoristas.
+                </div>
+
+                <div class="stats-cards" style="margin-bottom: 20px;">
+                    <div class="stat-card profit">
+                        <h3><i class="fas fa-piggy-bank"></i> Lucro Total (Int+Moto)</h3>
+                        <div class="value" id="totalProfit">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <!-- GRID PARA TABELAS ADMINISTRATIVAS -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                    
+                    <div class="table-card">
+                        <h2><i class="fas fa-chart-line"></i> Detalhamento de Lucro por Motorista</h2>
+                        <!-- Usei a classe admin-table-container para remover a barra de rolagem -->
+                        <div class="table-container admin-table-container">
+                            <table id="profitTable">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="motorista">Motorista</th>
+                                        <th data-sort="type">Tipo Veículo</th>
+                                        <th data-sort="count">Entregas</th>
+                                        <th data-sort="profitUnit">Lucro Unit.</th>
+                                        <th data-sort="profitTotal">Lucro Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profitTableBody">
+                                    <tr class="placeholder-message"><td colspan="5">Aguardando dados...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- NOVA TABELA: LUCRO POR CIDADE -->
+                    <div class="table-card">
+                        <h2><i class="fas fa-city"></i> Lucro por Cidade</h2>
+                        <div class="table-container admin-table-container">
+                            <table id="cityProfitTable">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="city">Cidade</th>
+                                        <th data-sort="count">Entregas</th>
+                                        <th data-sort="profitTotal">Lucro Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cityProfitTableBody">
+                                    <tr class="placeholder-message"><td colspan="3">Aguardando dados...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processando...</p>
+    </div>
+
+    <script>
+        // --- CONSTANTES ---
+        const VALOR_CARRO = 3.00;
+        const VALOR_MOTO = 2.20;      // <--- 2.20
+        const VALOR_INTERIOR = 2.00;
+        const VALOR_FATURAMENTO = 3.00;
+        
+        // Lucros (Faturamento - Custo)
+        const LUCRO_POR_MOTO = parseFloat((VALOR_FATURAMENTO - VALOR_MOTO).toFixed(2)); // 0.80
+        const LUCRO_POR_INTERIOR = parseFloat((VALOR_FATURAMENTO - VALOR_INTERIOR).toFixed(2)); // 1.00
+        
+        const STATUS_SUCESSO = "Recebimento com assinatura normal";
+        
+        // Chaves de armazenamento (Base original)
+        const MOTO_STORAGE_KEY = 'dashboard220_MotoList';
+        const INTERIOR_STORAGE_KEY = 'dashboard220_InteriorList';
+        
+        const COL_PEDIDO = 0;          
+        const COL_MOTORISTA = 4;       
+        const COL_STATUS = 10;         
+        const COL_DATA_ENTREGA = 12;   
+        const COL_CIDADE_DESTINO = 19; 
+        const COL_DESTINATARIO = 21;   
+        const MAX_COL_INDEX = Math.max(COL_PEDIDO, COL_MOTORISTA, COL_STATUS, COL_DATA_ENTREGA, COL_CIDADE_DESTINO, COL_DESTINATARIO);
+
+        // Estado Global
+        let allDeliveries = [];
+        let driverChoice, cityChoice, motoChoice, interiorChoice, paymentTypeChoice;
+        
+        // Dom
+        const loadButton = document.getElementById('loadButton');
+        const fileInput = document.getElementById('fileInput');
+        const loadingSpinner = document.getElementById('loading');
+
+        // Cards Elements
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalPaymentEl = document.getElementById('totalPayment');
+        const totalDeliveriesEl = document.getElementById('totalDeliveries');
+        const totalProfitEl = document.getElementById('totalProfit'); // No admin section
+
+        const q1_paymentEl = document.getElementById('q1_payment');
+        const q1_countEl = document.getElementById('q1_count');
+        const q2_paymentEl = document.getElementById('q2_payment');
+        const q2_countEl = document.getElementById('q2_count');
+
+        const paymentTableBody = document.getElementById('paymentTableBody');
+        const paymentTableFoot = document.getElementById('paymentTableFoot');
+        const detailsTableBody = document.getElementById('detailsTableBody');
+        const dailyBreakdownTableBody = document.getElementById('dailyBreakdownTableBody');
+        const profitTableBody = document.getElementById('profitTableBody');
+        const cityProfitTableBody = document.getElementById('cityProfitTableBody'); // Nova tabela
+
+        // Inicialização
+        loadButton.addEventListener('click', handleFileLoad);
+
+        // --- FUNÇÕES ---
+
+        function showLoading(show) {
+            loadingSpinner.style.display = show ? 'flex' : 'none';
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString || !dateString.includes('-')) return dateString;
+            const [y, m, d] = dateString.split('-');
+            return `${d}/${m}/${y}`;
+        }
+        
+        function getPaymentValue(motorista, motoList, interiorList) {
+            if (interiorList.includes(motorista)) return VALOR_INTERIOR;
+            if (motoList.includes(motorista)) return VALOR_MOTO;
+            return VALOR_CARRO;
+        }
+
+        function handleFileLoad() {
+            const file = fileInput.files[0];
+            if (!file) return alert("Selecione um arquivo.");
+            
+            showLoading(true);
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    allDeliveries = parseExcelData(json);
+                    initializeConfigAndFilters();
+                    updateDashboard();
+                } catch (err) {
+                    console.error(err);
+                    alert("Erro ao processar arquivo.");
+                } finally {
+                    showLoading(false);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelData(rows) {
+            const result = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length <= MAX_COL_INDEX) continue;
+                
+                const status = row[COL_STATUS] ? String(row[COL_STATUS]).trim() : '';
+                
+                if (status === STATUS_SUCESSO) {
+                    const motorista = row[COL_MOTORISTA] ? String(row[COL_MOTORISTA]).trim() : '';
+                    const cidade = row[COL_CIDADE_DESTINO] ? String(row[COL_CIDADE_DESTINO]).trim() : '';
+                    
+                    const rawDate = row[COL_DATA_ENTREGA] ? String(row[COL_DATA_ENTREGA]).trim() : '';
+                    let deliveryDate = '';
+                    let deliveryDay = 0;
+                    if (rawDate) {
+                        deliveryDate = rawDate.split(' ')[0];
+                        if (deliveryDate.includes('-')) {
+                            deliveryDay = parseInt(deliveryDate.split('-')[2], 10);
+                        }
+                    }
+
+                    if (motorista && cidade) {
+                        result.push({
+                            pedido: row[COL_PEDIDO] || '',
+                            motorista,
+                            status,
+                            cidade,
+                            destinatario: row[COL_DESTINATARIO] || '',
+                            isValid: true,
+                            deliveryDate,
+                            deliveryDay
+                        });
+                    }
+                }
+            }
+            return result;
+        }
+
+        function initializeConfigAndFilters() {
+            const drivers = [...new Set(allDeliveries.map(d => d.motorista))].sort();
+            const cities = [...new Set(allDeliveries.map(d => d.cidade))].sort();
+            
+            const driverOpts = drivers.map(d => ({ value: d, label: d }));
+            const cityOpts = cities.map(c => ({ value: c, label: c }));
+
+            if(driverChoice) driverChoice.destroy();
+            if(cityChoice) cityChoice.destroy();
+            if(motoChoice) motoChoice.destroy();
+            if(interiorChoice) interiorChoice.destroy();
+            if(paymentTypeChoice) paymentTypeChoice.destroy();
+
+            const motoEl = document.getElementById('motoDriverConfig');
+            motoChoice = new Choices(motoEl, { choices: driverOpts, removeItemButton: true, placeholderValue: 'Selecionar MOTOS' });
+            const savedMoto = localStorage.getItem(MOTO_STORAGE_KEY);
+            if(savedMoto) try { motoChoice.setValue(JSON.parse(savedMoto)); } catch(e){}
+            motoEl.addEventListener('change', () => {
+                localStorage.setItem(MOTO_STORAGE_KEY, JSON.stringify(motoChoice.getValue(true)));
+                updateDashboard();
+            });
+
+            const interiorEl = document.getElementById('interiorDriverConfig');
+            interiorChoice = new Choices(interiorEl, { choices: driverOpts, removeItemButton: true, placeholderValue: 'Selecionar INTERIOR' });
+            const savedInterior = localStorage.getItem(INTERIOR_STORAGE_KEY);
+            if(savedInterior) try { interiorChoice.setValue(JSON.parse(savedInterior)); } catch(e){}
+            interiorEl.addEventListener('change', () => {
+                localStorage.setItem(INTERIOR_STORAGE_KEY, JSON.stringify(interiorChoice.getValue(true)));
+                updateDashboard();
+            });
+
+            driverChoice = new Choices('#driverFilter', { choices: driverOpts, removeItemButton: true, placeholderValue: 'Todos Motoristas' });
+            cityChoice = new Choices('#cityFilter', { choices: cityOpts, removeItemButton: true, placeholderValue: 'Todas Cidades' });
+            
+            paymentTypeChoice = new Choices('#paymentTypeFilter', {
+                choices: [
+                    { value: 'carro', label: `Carro (R$ ${formatCurrency(VALOR_CARRO)})` },
+                    { value: 'moto', label: `Moto (R$ ${formatCurrency(VALOR_MOTO)})` },
+                    { value: 'interior', label: `Interior (R$ ${formatCurrency(VALOR_INTERIOR)})` }
+                ],
+                removeItemButton: true,
+                placeholderValue: 'Todos Tipos'
+            });
+
+            document.getElementById('driverFilter').addEventListener('change', updateDashboard);
+            document.getElementById('cityFilter').addEventListener('change', updateDashboard);
+            document.getElementById('paymentTypeFilter').addEventListener('change', updateDashboard);
+        }
+
+        function updateDashboard() {
+            if(allDeliveries.length === 0) return;
+
+            const fDrivers = driverChoice.getValue(true);
+            const fCities = cityChoice.getValue(true);
+            const fTypes = paymentTypeChoice.getValue(true);
+            
+            const motos = motoChoice.getValue(true);
+            const interiors = interiorChoice.getValue(true);
+
+            const filtered = allDeliveries.filter(row => {
+                if(fDrivers.length && !fDrivers.includes(row.motorista)) return false;
+                if(fCities.length && !fCities.includes(row.cidade)) return false;
+
+                const isInterior = interiors.includes(row.motorista);
+                const isMoto = motos.includes(row.motorista) && !isInterior;
+                
+                let type = 'carro';
+                if(isInterior) type = 'interior';
+                else if(isMoto) type = 'moto';
+
+                if(fTypes.length && !fTypes.includes(type)) return false;
+
+                row.valor = isInterior ? VALOR_INTERIOR : (isMoto ? VALOR_MOTO : VALOR_CARRO);
+                row.lucro = isInterior ? LUCRO_POR_INTERIOR : (isMoto ? LUCRO_POR_MOTO : 0);
+                row.tipo_veiculo = type;
+                
+                return true;
+            });
+
+            renderAll(filtered, fDrivers);
+        }
+
+        function renderAll(data, selectedDrivers) {
+            let tRevenue = 0, tPayment = 0, tProfit = 0;
+            let q1Payment = 0, q1Count = 0;
+            let q2Payment = 0, q2Count = 0;
+            
+            const driverStats = {};
+            const dailyStats = {};
+            const cityStats = {}; // Para lucro por cidade
+
+            data.forEach(d => {
+                tRevenue += VALOR_FATURAMENTO;
+                tPayment += d.valor;
+                tProfit += d.lucro;
+
+                if(d.deliveryDay >= 1 && d.deliveryDay <= 15) {
+                    q1Count++; q1Payment += d.valor;
+                } else if(d.deliveryDay >= 16) {
+                    q2Count++; q2Payment += d.valor;
+                }
+
+                if(!driverStats[d.motorista]) driverStats[d.motorista] = { 
+                    count:0, pay:0, profit:0, unit: d.valor, type: d.tipo_veiculo 
+                };
+                driverStats[d.motorista].count++;
+                driverStats[d.motorista].pay += d.valor;
+                driverStats[d.motorista].profit += d.lucro;
+
+                if(selectedDrivers.length === 1 && d.deliveryDate) {
+                    if(!dailyStats[d.deliveryDate]) dailyStats[d.deliveryDate] = 0;
+                    dailyStats[d.deliveryDate]++;
+                }
+
+                // Stats Cidade (apenas lucro)
+                if (d.lucro > 0) {
+                    if(!cityStats[d.cidade]) cityStats[d.cidade] = { profit: 0, count: 0 };
+                    cityStats[d.cidade].profit += d.lucro;
+                    cityStats[d.cidade].count++;
+                }
+            });
+
+            // Totais
+            document.getElementById('totalRevenue').innerText = formatCurrency(tRevenue);
+            document.getElementById('totalPayment').innerText = formatCurrency(tPayment);
+            document.getElementById('totalProfit').innerText = formatCurrency(tProfit); // Card de baixo
+            document.getElementById('totalDeliveries').innerText = data.length;
+
+            document.getElementById('q1_payment').innerText = formatCurrency(q1Payment);
+            document.getElementById('q1_count').innerText = q1Count + " entregas";
+            document.getElementById('q2_payment').innerText = formatCurrency(q2Payment);
+            document.getElementById('q2_count').innerText = q2Count + " entregas";
+
+            // --- TABELA 1: PAGAMENTO (SEM LUCRO) ---
+            tbodyPay = document.getElementById('paymentTableBody');
+            tbodyPay.innerHTML = "";
+            const driversArr = Object.keys(driverStats).map(k => ({name: k, ...driverStats[k]}));
+            driversArr.sort((a,b) => a.name.localeCompare(b.name));
+
+            if(driversArr.length === 0) tbodyPay.innerHTML = '<tr><td colspan="4">Sem dados.</td></tr>';
+            else driversArr.forEach(d => {
+                tbodyPay.innerHTML += `
+                    <tr>
+                        <td>${d.name}</td>
+                        <td>${d.count}</td>
+                        <td>${formatCurrency(d.unit)}</td>
+                        <td>${formatCurrency(d.pay)}</td>
+                    </tr>`;
+            });
+            document.getElementById('paymentTableFoot').innerHTML = `
+                <tr>
+                    <td>Total</td>
+                    <td>${data.length}</td>
+                    <td>-</td>
+                    <td>${formatCurrency(tPayment)}</td>
+                </tr>`;
+
+            // --- TABELA 2: DIÁRIO ---
+            const tbodyDaily = document.getElementById('dailyBreakdownTableBody');
+            tbodyDaily.innerHTML = "";
+            if(selectedDrivers.length === 1) {
+                const daysArr = Object.keys(dailyStats).sort().map(k => ({date: k, count: dailyStats[k]}));
+                if(daysArr.length === 0) tbodyDaily.innerHTML = '<tr><td colspan="2">Sem dados.</td></tr>';
+                else daysArr.forEach(d => {
+                    tbodyDaily.innerHTML += `<tr><td>${formatDate(d.date)}</td><td>${d.count}</td></tr>`;
+                });
+            } else {
+                tbodyDaily.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">Selecione apenas 1 motorista para ver.</td></tr>';
+            }
+
+            // --- TABELA 3: LUCRO (ADMIN) ---
+            profitTableBody.innerHTML = "";
+            const profitArr = driversArr.filter(d => d.profit > 0);
+            
+            // Ordena lucro decrescente
+            profitArr.sort((a, b) => b.profit - a.profit);
+
+            if(profitArr.length === 0) {
+                profitTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum lucro gerado com os filtros atuais.</td></tr>';
+            } else {
+                profitArr.forEach(d => {
+                    const unitProfit = d.type === 'interior' ? LUCRO_POR_INTERIOR : LUCRO_POR_MOTO;
+                    
+                    profitTableBody.innerHTML += `
+                        <tr>
+                            <td>${d.name}</td>
+                            <td>${d.type.toUpperCase()}</td>
+                            <td>${d.count}</td>
+                            <td>${formatCurrency(unitProfit)}</td>
+                            <td class="lucro-val">${formatCurrency(d.profit)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // --- TABELA 4: LUCRO POR CIDADE (ADMIN) ---
+            cityProfitTableBody.innerHTML = "";
+            const cityArr = Object.keys(cityStats).map(k => ({ name: k, ...cityStats[k] }));
+            
+            // Ordena por lucro decrescente
+            cityArr.sort((a, b) => b.profit - a.profit);
+
+            if(cityArr.length === 0) {
+                cityProfitTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhum lucro gerado.</td></tr>';
+            } else {
+                cityArr.forEach(c => {
+                    cityProfitTableBody.innerHTML += `
+                        <tr>
+                            <td>${c.name}</td>
+                            <td>${c.count}</td>
+                            <td class="lucro-val">${formatCurrency(c.profit)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // --- TABELA 5: DETALHES ---
+            const tbodyDet = document.getElementById('detailsTableBody');
+            tbodyDet.innerHTML = "";
+            data.slice(0, 500).forEach(d => {
+                tbodyDet.innerHTML += `<tr>
+                    <td>${d.pedido}</td><td>${d.motorista}</td><td>${d.destinatario}</td>
+                    <td>${d.cidade}</td><td>${d.status}</td><td>${formatCurrency(d.valor)}</td>
+                </tr>`;
+            });
+        }
+    </script>
+</body>
+</html>
