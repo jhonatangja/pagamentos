@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Pagamento - Separação de Lucro</title>
     
-    <!-- BIBLIOTECAS DE JAVASCRIPT -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
@@ -44,16 +43,15 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         
-        /* --- NOVA SEÇÃO ADMINISTRATIVA --- */
         .admin-section {
-            background-color: #fffbf0; /* Fundo levemente amarelado para diferenciar */
+            background-color: #fffbf0; 
             border: 2px solid #ffeeba;
             border-radius: 12px;
             padding: 25px;
             margin-top: 30px;
         }
         .admin-section h2 {
-            color: #856404; /* Cor de destaque para admin */
+            color: #856404; 
             border-bottom-color: #ffeeba;
         }
         .admin-warning {
@@ -65,7 +63,6 @@
             margin-bottom: 20px;
             display: inline-block;
         }
-        /* --- FIM SEÇÃO ADMIN --- */
 
         h2 {
             margin-top: 0;
@@ -89,10 +86,12 @@
             transition: background-color 0.2s;
         }
         .load-button:hover { background-color: #004a99; }
+        .btn-success { background-color: #28a745; margin-top: 10px; }
+        .btn-success:hover { background-color: #218838; }
         
         .config-controls, .filter-controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
             gap: 20px;
         }
         
@@ -101,6 +100,14 @@
         }
         .config-group label i { color: #ffc107; }
         .config-group label i.fa-map-pin { color: #28a745; }
+
+        .import-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
 
         .simple-select { display: none; }
 
@@ -122,12 +129,9 @@
         
         .stat-card.revenue { border-left: 5px solid #6f42c1; }
         .stat-card.revenue .value { color: #6f42c1; }
-        
         .stat-card.payment { border-left: 5px solid #0056b3; }
-        
         .stat-card.profit { border-left: 5px solid #17a2b8; background-color: #fff; }
         .stat-card.profit .value { color: #17a2b8; }
-        
         .stat-card.deliveries { border-left: 5px solid #28a745; }
         .stat-card.deliveries .value { color: #28a745; }
         
@@ -153,7 +157,6 @@
         /* Tabelas */
         .table-container { max-height: 500px; overflow-y: auto; }
         
-        /* Classe especial para remover rolagem nas tabelas administrativas */
         .admin-table-container {
             max-height: none !important;
             overflow-y: visible !important;
@@ -172,9 +175,8 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         tfoot { background-color: #e9ecef; font-weight: bold; }
         
-        /* Admin Table Colors */
-        #profitTable th, #cityProfitTable th { background-color: #fff3cd; color: #856404; }
-        #profitTable .lucro-val, #cityProfitTable .lucro-val { font-weight: bold; color: #28a745; }
+        #profitTable th, #cityProfitTable th, #dailyProfitTable th { background-color: #fff3cd; color: #856404; }
+        #profitTable .lucro-val, #cityProfitTable .lucro-val, #dailyProfitTable .lucro-val { font-weight: bold; color: #28a745; }
         
         th[data-sort].sort-asc::after { content: ' ▲'; font-size: 0.8em; }
         th[data-sort].sort-desc::after { content: ' ▼'; font-size: 0.8em; }
@@ -203,28 +205,50 @@
 
         <main class="main-content">
             <section class="upload-section">
-                <h2><i class="fas fa-file-excel"></i> Carregar Dados</h2>
+                <h2><i class="fas fa-file-excel"></i> 1. Carregar Dados do Sistema</h2>
                 <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
-                <button id="loadButton" class="load-button"><i class="fas fa-upload"></i> Carregar Dados</button>
+                <button id="loadButton" class="load-button"><i class="fas fa-upload"></i> Carregar Entregas</button>
             </section>
             
             <section class="config-section">
-                <h2><i class="fas fa-cog"></i> Configuração de Veículos</h2>
+                <h2><i class="fas fa-cog"></i> 2. Configuração de Veículos</h2>
+                
+                <div class="import-box">
+                    <label style="font-weight: 600; color: #555; display: block; margin-bottom: 5px;">
+                        <i class="fas fa-file-import"></i> Importar Lista Pronta (Excel)
+                    </label>
+                    <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 12px;">
+                        Para não ter que selecionar manualmente, crie uma planilha no Excel com a <b>Coluna A</b> = Nome do Motorista e <b>Coluna B</b> = Escreva "Moto" ou "Interior".
+                    </p>
+                    <input type="file" id="configFileInput" accept=".xlsx, .xls, .csv">
+                    <button id="loadConfigButton" class="load-button btn-success">
+                        <i class="fas fa-check-double"></i> Carregar Planilha de Configuração
+                    </button>
+                </div>
+
                 <div class="config-controls">
                     <div class="config-group">
-                        <label for="motoDriverConfig"><i class="fas fa-motorcycle"></i> Selecione as MOTOS (R$ 2,20)</label>
+                        <label for="motoDriverConfig"><i class="fas fa-motorcycle"></i> Selecionados MOTOS (R$ 2,20)</label>
                         <select id="motoDriverConfig" multiple></select>
                     </div>
                     <div class="config-group">
-                        <label for="interiorDriverConfig"><i class="fas fa-map-pin"></i> Selecione INTERIOR (R$ 2,00)</label>
+                        <label for="interiorDriverConfig"><i class="fas fa-map-pin"></i> Selecionados INTERIOR (R$ 2,00)</label>
                         <select id="interiorDriverConfig" multiple></select>
                     </div>
                 </div>
             </section>
 
             <section class="filter-section">
-                <h2><i class="fas fa-filter"></i> Filtros</h2>
+                <h2><i class="fas fa-filter"></i> Filtros de Visualização</h2>
                 <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="quinzenaFilter">Período (Quinzena)</label>
+                        <select id="quinzenaFilter">
+                            <option value="todas">Ambas as Quinzenas (Mês todo)</option>
+                            <option value="q1">1ª Quinzena (Dias 1 a 15)</option>
+                            <option value="q2">2ª Quinzena (Dia 16 em diante)</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label for="driverFilter">Motorista</label>
                         <select id="driverFilter" multiple></select>
@@ -256,7 +280,6 @@
                 </div>
             </section>
 
-            <!-- CARD DE LUCRO REMOVIDO DAQUI -->
             <section class="stats-cards">
                 <div class="stat-card revenue">
                     <h3><i class="fas fa-hand-holding-usd"></i> Faturamento Total</h3>
@@ -283,7 +306,6 @@
                                     <th data-sort="count">Qtd</th>
                                     <th data-sort="valorUnitario">Valor Unit.</th>
                                     <th data-sort="totalPayment">A Pagar</th>
-                                    <!-- SEM COLUNA DE LUCRO AQUI -->
                                 </tr>
                             </thead>
                             <tbody id="paymentTableBody">
@@ -312,30 +334,29 @@
                 </div>
             </section>
             
-            <section class="table-card">
-                <h2><i class="fas fa-list-check"></i> Detalhes das Entregas</h2>
-                <div class="table-container">
-                    <table id="detailsTable">
+            <section class="table-card admin-section" style="margin-top: 0;">
+                <h2><i class="fas fa-calendar-day"></i> Lucro por Dia (Moto + Interior)</h2>
+                <div class="admin-warning" style="margin-bottom: 15px;">
+                    <i class="fas fa-eye-slash"></i> Área administrativa. Exibe o lucro gerado em cada dia de operação.
+                </div>
+                <div class="table-container admin-table-container">
+                    <table id="dailyProfitTable">
                         <thead>
                             <tr>
-                                <th data-sort="pedido">Pedido JMS</th>
-                                <th data-sort="motorista">Motorista</th>
-                                <th data-sort="destinatario">Destinatário</th>
-                                <th data-sort="cidade">Cidade</th>
-                                <th data-sort="status">Status</th>
-                                <th data-sort="valor">Valor</th>
+                                <th data-sort="date">Data da Entrega</th>
+                                <th data-sort="moto">Qtd Moto</th>
+                                <th data-sort="interior">Qtd Interior</th>
+                                <th data-sort="profit">Lucro do Dia</th>
                             </tr>
                         </thead>
-                        <tbody id="detailsTableBody">
-                            <tr class="placeholder-message"><td colspan="6">Carregue o arquivo...</td></tr>
+                        <tbody id="dailyProfitTableBody">
+                            <tr class="placeholder-message"><td colspan="4">Carregue o arquivo...</td></tr>
                         </tbody>
+                        <tfoot id="dailyProfitTableFoot"></tfoot>
                     </table>
                 </div>
             </section>
 
-            <!-- ============================================== -->
-            <!-- NOVA SEÇÃO ADMINISTRATIVA (LUCROS)             -->
-            <!-- ============================================== -->
             <section class="admin-section">
                 <h2><i class="fas fa-lock"></i> Área Administrativa - Controle de Lucro</h2>
                 <div class="admin-warning">
@@ -349,12 +370,10 @@
                     </div>
                 </div>
 
-                <!-- GRID PARA TABELAS ADMINISTRATIVAS -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
                     
                     <div class="table-card">
                         <h2><i class="fas fa-chart-line"></i> Detalhamento de Lucro por Motorista</h2>
-                        <!-- Usei a classe admin-table-container para remover a barra de rolagem -->
                         <div class="table-container admin-table-container">
                             <table id="profitTable">
                                 <thead>
@@ -373,7 +392,6 @@
                         </div>
                     </div>
 
-                    <!-- NOVA TABELA: LUCRO POR CIDADE -->
                     <div class="table-card">
                         <h2><i class="fas fa-city"></i> Lucro por Cidade</h2>
                         <div class="table-container admin-table-container">
@@ -406,17 +424,16 @@
     <script>
         // --- CONSTANTES ---
         const VALOR_CARRO = 3.00;
-        const VALOR_MOTO = 2.20;      // <--- 2.20
+        const VALOR_MOTO = 2.20;      
         const VALOR_INTERIOR = 2.00;
         const VALOR_FATURAMENTO = 3.00;
         
         // Lucros (Faturamento - Custo)
-        const LUCRO_POR_MOTO = parseFloat((VALOR_FATURAMENTO - VALOR_MOTO).toFixed(2)); // 0.80
-        const LUCRO_POR_INTERIOR = parseFloat((VALOR_FATURAMENTO - VALOR_INTERIOR).toFixed(2)); // 1.00
+        const LUCRO_POR_MOTO = parseFloat((VALOR_FATURAMENTO - VALOR_MOTO).toFixed(2)); 
+        const LUCRO_POR_INTERIOR = parseFloat((VALOR_FATURAMENTO - VALOR_INTERIOR).toFixed(2)); 
         
         const STATUS_SUCESSO = "Recebimento com assinatura normal";
         
-        // Chaves de armazenamento (Base original)
         const MOTO_STORAGE_KEY = 'dashboard220_MotoList';
         const INTERIOR_STORAGE_KEY = 'dashboard220_InteriorList';
         
@@ -430,33 +447,18 @@
 
         // Estado Global
         let allDeliveries = [];
-        let driverChoice, cityChoice, motoChoice, interiorChoice, paymentTypeChoice;
+        let driverChoice, cityChoice, motoChoice, interiorChoice, paymentTypeChoice, quinzenaChoice;
         
         // Dom
         const loadButton = document.getElementById('loadButton');
         const fileInput = document.getElementById('fileInput');
+        const loadConfigButton = document.getElementById('loadConfigButton');
+        const configFileInput = document.getElementById('configFileInput');
         const loadingSpinner = document.getElementById('loading');
-
-        // Cards Elements
-        const totalRevenueEl = document.getElementById('totalRevenue');
-        const totalPaymentEl = document.getElementById('totalPayment');
-        const totalDeliveriesEl = document.getElementById('totalDeliveries');
-        const totalProfitEl = document.getElementById('totalProfit'); // No admin section
-
-        const q1_paymentEl = document.getElementById('q1_payment');
-        const q1_countEl = document.getElementById('q1_count');
-        const q2_paymentEl = document.getElementById('q2_payment');
-        const q2_countEl = document.getElementById('q2_count');
-
-        const paymentTableBody = document.getElementById('paymentTableBody');
-        const paymentTableFoot = document.getElementById('paymentTableFoot');
-        const detailsTableBody = document.getElementById('detailsTableBody');
-        const dailyBreakdownTableBody = document.getElementById('dailyBreakdownTableBody');
-        const profitTableBody = document.getElementById('profitTableBody');
-        const cityProfitTableBody = document.getElementById('cityProfitTableBody'); // Nova tabela
 
         // Inicialização
         loadButton.addEventListener('click', handleFileLoad);
+        loadConfigButton.addEventListener('click', handleConfigLoad);
 
         // --- FUNÇÕES ---
 
@@ -474,15 +476,9 @@
             return `${d}/${m}/${y}`;
         }
         
-        function getPaymentValue(motorista, motoList, interiorList) {
-            if (interiorList.includes(motorista)) return VALOR_INTERIOR;
-            if (motoList.includes(motorista)) return VALOR_MOTO;
-            return VALOR_CARRO;
-        }
-
         function handleFileLoad() {
             const file = fileInput.files[0];
-            if (!file) return alert("Selecione um arquivo.");
+            if (!file) return alert("Selecione o arquivo de entregas.");
             
             showLoading(true);
             const reader = new FileReader();
@@ -500,6 +496,66 @@
                 } catch (err) {
                     console.error(err);
                     alert("Erro ao processar arquivo.");
+                } finally {
+                    showLoading(false);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- NOVA FUNÇÃO DE CARREGAR CONFIGURAÇÃO VIA EXCEL ---
+        function handleConfigLoad() {
+            const file = configFileInput.files[0];
+            if (!file) return alert("Selecione o arquivo Excel com a lista de motoristas.");
+            
+            showLoading(true);
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    const newMotos = [];
+                    const newInteriors = [];
+
+                    for (let i = 0; i < json.length; i++) {
+                        const row = json[i];
+                        if (row && row.length >= 2) {
+                            const motorista = String(row[0]).trim();
+                            const tipo = String(row[1]).trim().toLowerCase();
+                            
+                            // Ignora cabeçalhos que tenham a palavra "motorista" (opcional)
+                            if (motorista && motorista.toLowerCase() !== 'motorista') {
+                                if (tipo.includes('moto')) newMotos.push(motorista);
+                                else if (tipo.includes('interior')) newInteriors.push(motorista);
+                            }
+                        }
+                    }
+
+                    if (newMotos.length === 0 && newInteriors.length === 0) {
+                        alert("Nenhum motorista encontrado. Lembre-se: Coluna A = Nome, Coluna B = 'Moto' ou 'Interior'.");
+                        return;
+                    }
+
+                    // Salva na memória do navegador
+                    localStorage.setItem(MOTO_STORAGE_KEY, JSON.stringify(newMotos));
+                    localStorage.setItem(INTERIOR_STORAGE_KEY, JSON.stringify(newInteriors));
+
+                    // Atualiza os seletores visuais caso os dados principais já tenham sido carregados
+                    if (motoChoice && interiorChoice) {
+                        initializeConfigAndFilters(); 
+                        updateDashboard();
+                    }
+
+                    alert(`Configuração salva com sucesso!\n\n${newMotos.length} Motos registrados.\n${newInteriors.length} Interior registrados.`);
+                    configFileInput.value = ""; // Limpa o input
+                    
+                } catch (err) {
+                    console.error(err);
+                    alert("Erro ao ler planilha de configuração.");
                 } finally {
                     showLoading(false);
                 }
@@ -547,7 +603,14 @@
         }
 
         function initializeConfigAndFilters() {
-            const drivers = [...new Set(allDeliveries.map(d => d.motorista))].sort();
+            // Pegamos todos os motoristas já mapeados da planilha + os que estão salvos na memória
+            let drivers = [...new Set(allDeliveries.map(d => d.motorista))];
+            const savedMoto = JSON.parse(localStorage.getItem(MOTO_STORAGE_KEY)) || [];
+            const savedInterior = JSON.parse(localStorage.getItem(INTERIOR_STORAGE_KEY)) || [];
+            
+            // Garante que motoristas salvos também apareçam na lista do select, mesmo que não tenham entrega hoje
+            drivers = [...new Set([...drivers, ...savedMoto, ...savedInterior])].sort();
+            
             const cities = [...new Set(allDeliveries.map(d => d.cidade))].sort();
             
             const driverOpts = drivers.map(d => ({ value: d, label: d }));
@@ -558,11 +621,13 @@
             if(motoChoice) motoChoice.destroy();
             if(interiorChoice) interiorChoice.destroy();
             if(paymentTypeChoice) paymentTypeChoice.destroy();
+            if(quinzenaChoice) quinzenaChoice.destroy();
+
+            quinzenaChoice = new Choices('#quinzenaFilter', { searchEnabled: false, shouldSort: false });
 
             const motoEl = document.getElementById('motoDriverConfig');
             motoChoice = new Choices(motoEl, { choices: driverOpts, removeItemButton: true, placeholderValue: 'Selecionar MOTOS' });
-            const savedMoto = localStorage.getItem(MOTO_STORAGE_KEY);
-            if(savedMoto) try { motoChoice.setValue(JSON.parse(savedMoto)); } catch(e){}
+            if(savedMoto.length > 0) try { motoChoice.setValue(savedMoto); } catch(e){}
             motoEl.addEventListener('change', () => {
                 localStorage.setItem(MOTO_STORAGE_KEY, JSON.stringify(motoChoice.getValue(true)));
                 updateDashboard();
@@ -570,8 +635,7 @@
 
             const interiorEl = document.getElementById('interiorDriverConfig');
             interiorChoice = new Choices(interiorEl, { choices: driverOpts, removeItemButton: true, placeholderValue: 'Selecionar INTERIOR' });
-            const savedInterior = localStorage.getItem(INTERIOR_STORAGE_KEY);
-            if(savedInterior) try { interiorChoice.setValue(JSON.parse(savedInterior)); } catch(e){}
+            if(savedInterior.length > 0) try { interiorChoice.setValue(savedInterior); } catch(e){}
             interiorEl.addEventListener('change', () => {
                 localStorage.setItem(INTERIOR_STORAGE_KEY, JSON.stringify(interiorChoice.getValue(true)));
                 updateDashboard();
@@ -590,6 +654,7 @@
                 placeholderValue: 'Todos Tipos'
             });
 
+            document.getElementById('quinzenaFilter').addEventListener('change', updateDashboard);
             document.getElementById('driverFilter').addEventListener('change', updateDashboard);
             document.getElementById('cityFilter').addEventListener('change', updateDashboard);
             document.getElementById('paymentTypeFilter').addEventListener('change', updateDashboard);
@@ -598,6 +663,7 @@
         function updateDashboard() {
             if(allDeliveries.length === 0) return;
 
+            const fQuinzena = quinzenaChoice.getValue(true);
             const fDrivers = driverChoice.getValue(true);
             const fCities = cityChoice.getValue(true);
             const fTypes = paymentTypeChoice.getValue(true);
@@ -606,6 +672,9 @@
             const interiors = interiorChoice.getValue(true);
 
             const filtered = allDeliveries.filter(row => {
+                if(fQuinzena === 'q1' && row.deliveryDay > 15) return false;
+                if(fQuinzena === 'q2' && row.deliveryDay <= 15) return false;
+
                 if(fDrivers.length && !fDrivers.includes(row.motorista)) return false;
                 if(fCities.length && !fCities.includes(row.cidade)) return false;
 
@@ -635,7 +704,8 @@
             
             const driverStats = {};
             const dailyStats = {};
-            const cityStats = {}; // Para lucro por cidade
+            const cityStats = {}; 
+            const dailyProfitStats = {}; 
 
             data.forEach(d => {
                 tRevenue += VALOR_FATURAMENTO;
@@ -660,18 +730,24 @@
                     dailyStats[d.deliveryDate]++;
                 }
 
-                // Stats Cidade (apenas lucro)
                 if (d.lucro > 0) {
                     if(!cityStats[d.cidade]) cityStats[d.cidade] = { profit: 0, count: 0 };
                     cityStats[d.cidade].profit += d.lucro;
                     cityStats[d.cidade].count++;
+
+                    if(d.deliveryDate) {
+                        if(!dailyProfitStats[d.deliveryDate]) dailyProfitStats[d.deliveryDate] = { moto: 0, interior: 0, profit: 0 };
+                        if(d.tipo_veiculo === 'moto') dailyProfitStats[d.deliveryDate].moto++;
+                        if(d.tipo_veiculo === 'interior') dailyProfitStats[d.deliveryDate].interior++;
+                        dailyProfitStats[d.deliveryDate].profit += d.lucro;
+                    }
                 }
             });
 
             // Totais
             document.getElementById('totalRevenue').innerText = formatCurrency(tRevenue);
             document.getElementById('totalPayment').innerText = formatCurrency(tPayment);
-            document.getElementById('totalProfit').innerText = formatCurrency(tProfit); // Card de baixo
+            document.getElementById('totalProfit').innerText = formatCurrency(tProfit); 
             document.getElementById('totalDeliveries').innerText = data.length;
 
             document.getElementById('q1_payment').innerText = formatCurrency(q1Payment);
@@ -679,8 +755,8 @@
             document.getElementById('q2_payment').innerText = formatCurrency(q2Payment);
             document.getElementById('q2_count').innerText = q2Count + " entregas";
 
-            // --- TABELA 1: PAGAMENTO (SEM LUCRO) ---
-            tbodyPay = document.getElementById('paymentTableBody');
+            // --- TABELA 1: PAGAMENTO ---
+            const tbodyPay = document.getElementById('paymentTableBody');
             tbodyPay.innerHTML = "";
             const driversArr = Object.keys(driverStats).map(k => ({name: k, ...driverStats[k]}));
             driversArr.sort((a,b) => a.name.localeCompare(b.name));
@@ -716,11 +792,40 @@
                 tbodyDaily.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">Selecione apenas 1 motorista para ver.</td></tr>';
             }
 
-            // --- TABELA 3: LUCRO (ADMIN) ---
+            // --- TABELA 3: LUCRO POR DIA ---
+            const dailyProfitTableBody = document.getElementById('dailyProfitTableBody');
+            const dailyProfitTableFoot = document.getElementById('dailyProfitTableFoot');
+            dailyProfitTableBody.innerHTML = "";
+            const dailyProfitArr = Object.keys(dailyProfitStats).sort().map(k => ({date: k, ...dailyProfitStats[k]}));
+            
+            let totalDailyProfit = 0;
+            if(dailyProfitArr.length === 0) {
+                dailyProfitTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum lucro gerado neste período.</td></tr>';
+                dailyProfitTableFoot.innerHTML = '';
+            } else {
+                dailyProfitArr.forEach(d => {
+                    totalDailyProfit += d.profit;
+                    dailyProfitTableBody.innerHTML += `
+                        <tr>
+                            <td>${formatDate(d.date)}</td>
+                            <td>${d.moto}</td>
+                            <td>${d.interior}</td>
+                            <td class="lucro-val">${formatCurrency(d.profit)}</td>
+                        </tr>
+                    `;
+                });
+                dailyProfitTableFoot.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:right;"><strong>Total do Período:</strong></td>
+                        <td class="lucro-val"><strong>${formatCurrency(totalDailyProfit)}</strong></td>
+                    </tr>
+                `;
+            }
+
+            // --- TABELA 4: LUCRO (ADMIN) ---
+            const profitTableBody = document.getElementById('profitTableBody');
             profitTableBody.innerHTML = "";
             const profitArr = driversArr.filter(d => d.profit > 0);
-            
-            // Ordena lucro decrescente
             profitArr.sort((a, b) => b.profit - a.profit);
 
             if(profitArr.length === 0) {
@@ -728,7 +833,6 @@
             } else {
                 profitArr.forEach(d => {
                     const unitProfit = d.type === 'interior' ? LUCRO_POR_INTERIOR : LUCRO_POR_MOTO;
-                    
                     profitTableBody.innerHTML += `
                         <tr>
                             <td>${d.name}</td>
@@ -741,11 +845,10 @@
                 });
             }
 
-            // --- TABELA 4: LUCRO POR CIDADE (ADMIN) ---
+            // --- TABELA 5: LUCRO POR CIDADE (ADMIN) ---
+            const cityProfitTableBody = document.getElementById('cityProfitTableBody');
             cityProfitTableBody.innerHTML = "";
             const cityArr = Object.keys(cityStats).map(k => ({ name: k, ...cityStats[k] }));
-            
-            // Ordena por lucro decrescente
             cityArr.sort((a, b) => b.profit - a.profit);
 
             if(cityArr.length === 0) {
@@ -761,16 +864,6 @@
                     `;
                 });
             }
-
-            // --- TABELA 5: DETALHES ---
-            const tbodyDet = document.getElementById('detailsTableBody');
-            tbodyDet.innerHTML = "";
-            data.slice(0, 500).forEach(d => {
-                tbodyDet.innerHTML += `<tr>
-                    <td>${d.pedido}</td><td>${d.motorista}</td><td>${d.destinatario}</td>
-                    <td>${d.cidade}</td><td>${d.status}</td><td>${formatCurrency(d.valor)}</td>
-                </tr>`;
-            });
         }
     </script>
 </body>
